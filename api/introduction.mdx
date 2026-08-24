@@ -1,0 +1,84 @@
+---
+title: "Story API: Build with the Story Platform"
+sidebarTitle: "Introduction"
+description: "The Story REST API lets you programmatically create and manage stories, chapters, users, and webhooks from your own apps and integrations."
+---
+
+The Story API is a RESTful API that lets you build integrations, automate content management, and extend the Story platform programmatically. Whether you're syncing stories from an external CMS, building a custom publishing dashboard, or automating chapter releases, the API gives you full control over your Story content and account.
+
+## Base URL
+
+All API requests are made to the following base URL:
+
+```
+https://api.story.app/v1
+```
+
+Append the endpoint path to this base URL for every request. For example, to list your stories, send a request to `https://api.story.app/v1/stories`.
+
+## Request Format
+
+All requests must use JSON. Set the `Content-Type` header on every request that includes a body:
+
+```
+Content-Type: application/json
+```
+
+Send request bodies as a JSON-encoded string. Query parameters follow standard URL encoding rules.
+
+## Response Format
+
+All responses return JSON. A successful response wraps the resource data in a `data` key alongside a `meta` object that includes a unique request identifier:
+
+```json
+{
+  "data": { ... },
+  "meta": {
+    "request_id": "req_abc123"
+  }
+}
+```
+
+Use the `request_id` when contacting Story support to help trace a specific request.
+
+## Errors
+
+When a request fails, the API returns an `error` object with a machine-readable `code` and a human-readable `message`:
+
+```json
+{
+  "error": {
+    "code": "unauthorized",
+    "message": "Invalid or missing API key."
+  }
+}
+```
+
+The HTTP status code on the response indicates the class of error. The table below lists the most common status codes you'll encounter:
+
+| Status Code | Meaning |
+|---|---|
+| `400 Bad Request` | The request contained invalid or missing parameters. |
+| `401 Unauthorized` | Your API key is missing or invalid. |
+| `403 Forbidden` | Your API key does not have permission to perform this action. |
+| `404 Not Found` | The requested resource does not exist. |
+| `429 Too Many Requests` | You have exceeded the rate limit for your API key. |
+| `500 Internal Server Error` | An unexpected error occurred on Story's servers. |
+
+When you receive a `400` error, check the `message` field for details about which parameter is invalid. For `500` errors, wait a moment and retry the request before contacting support.
+
+## Rate Limits
+
+The Story API allows **1,000 requests per hour** per API key. Every response includes the following headers so you can track your usage in real time:
+
+| Header | Description |
+|---|---|
+| `X-RateLimit-Limit` | The maximum number of requests allowed per hour. |
+| `X-RateLimit-Remaining` | The number of requests remaining in the current window. |
+| `X-RateLimit-Reset` | The Unix timestamp at which the current rate limit window resets. |
+
+If you exceed the limit, the API returns a `429 Too Many Requests` response. Wait until the time indicated by `X-RateLimit-Reset` before sending additional requests.
+
+---
+
+Ready to make your first request? Start by [setting up authentication](/api/authentication).

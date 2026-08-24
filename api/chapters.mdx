@@ -1,0 +1,358 @@
+---
+title: "REST API Endpoints for Story Chapters"
+sidebarTitle: "Chapters"
+description: "List and create chapters within a story using the Story API. Manage chapter content, order, author notes, and publish state."
+---
+
+The Chapters endpoints let you manage the individual chapters that make up a story. You can list all chapters in a story, create new ones, retrieve or update specific chapters, and delete chapters you no longer need. Chapter content can be submitted as HTML or Markdown. All chapter endpoints are nested under a parent story — you'll need the story's ID for every request.
+
+---
+
+## The chapter object
+
+Every endpoint that returns a chapter uses the following object shape.
+
+<ResponseField name="id" type="string">
+  The unique identifier for the chapter.
+</ResponseField>
+
+<ResponseField name="story_id" type="string">
+  The ID of the story this chapter belongs to.
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  The title of the chapter.
+</ResponseField>
+
+<ResponseField name="content" type="string">
+  The body content of the chapter, as HTML or Markdown.
+</ResponseField>
+
+<ResponseField name="order" type="integer">
+  The position of the chapter within the story. Chapters are displayed in ascending order.
+</ResponseField>
+
+<ResponseField name="author_note" type="string">
+  An optional note from the author displayed alongside the chapter.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  The publish state of the chapter. Either `draft` or `published`.
+</ResponseField>
+
+<ResponseField name="word_count" type="integer">
+  The number of words in the chapter content, calculated automatically.
+</ResponseField>
+
+<ResponseField name="published_at" type="string">
+  The ISO 8601 timestamp at which the chapter was published, or `null` if still a draft.
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  The ISO 8601 timestamp at which the chapter was created.
+</ResponseField>
+
+---
+
+## List chapters
+
+<Note>Requires the `read:stories` scope.</Note>
+
+Retrieve all chapters for a given story, optionally filtered by publish status.
+
+```
+GET /stories/{story_id}/chapters
+```
+
+### Path parameters
+
+<ParamField path="story_id" type="string" required>
+  The unique ID of the parent story.
+</ParamField>
+
+### Query parameters
+
+<ParamField query="status" type="string" default="all">
+  Filter chapters by publish status. One of `draft`, `published`, or `all`.
+</ParamField>
+
+### Example request
+
+```bash
+curl https://api.story.app/v1/stories/st_abc123/chapters?status=published \
+  -H "Authorization: Bearer $STORY_API_KEY"
+```
+
+### Example response
+
+```json
+{
+  "data": [
+    {
+      "id": "ch_xyz001",
+      "story_id": "st_abc123",
+      "title": "Chapter 1: The Ember Rises",
+      "content": "<p>The throne room was silent save for the crackle of fire...</p>",
+      "order": 1,
+      "author_note": "Thanks for reading! This chapter sets the stage for everything to come.",
+      "status": "published",
+      "word_count": 3420,
+      "published_at": "2024-03-10T08:00:00Z",
+      "created_at": "2024-03-01T10:00:00Z"
+    },
+    {
+      "id": "ch_xyz002",
+      "story_id": "st_abc123",
+      "title": "Chapter 2: The Queen's Gambit",
+      "content": "<p>She had not slept in three days...</p>",
+      "order": 2,
+      "author_note": null,
+      "status": "published",
+      "word_count": 4105,
+      "published_at": "2024-03-17T08:00:00Z",
+      "created_at": "2024-03-08T14:30:00Z"
+    }
+  ],
+  "meta": {
+    "request_id": "req_chp001"
+  }
+}
+```
+
+---
+
+## Create a chapter
+
+<Note>Requires the `write:stories` scope.</Note>
+
+Add a new chapter to a story. New chapters default to `draft` status and are not visible to readers until you publish them.
+
+```
+POST /stories/{story_id}/chapters
+```
+
+### Path parameters
+
+<ParamField path="story_id" type="string" required>
+  The unique ID of the story to add a chapter to.
+</ParamField>
+
+### Body parameters
+
+<ParamField body="title" type="string" required>
+  The title of the chapter.
+</ParamField>
+
+<ParamField body="content" type="string">
+  The body content of the chapter. Accepts HTML or Markdown.
+</ParamField>
+
+<ParamField body="order" type="integer">
+  The position of the chapter in the story. If omitted, the chapter is appended to the end.
+</ParamField>
+
+<ParamField body="author_note" type="string">
+  An optional author note to display with the chapter.
+</ParamField>
+
+<ParamField body="status" type="string" default="draft">
+  The initial publish status of the chapter. One of `draft` or `published`.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X POST https://api.story.app/v1/stories/st_abc123/chapters \
+  -H "Authorization: Bearer $STORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Chapter 3: Ashes and Oaths",
+    "content": "<p>The war council met at dawn, their faces grim...</p>",
+    "order": 3,
+    "author_note": "This one was tough to write. Hope you enjoy it!",
+    "status": "draft"
+  }'
+```
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "ch_xyz003",
+    "story_id": "st_abc123",
+    "title": "Chapter 3: Ashes and Oaths",
+    "content": "<p>The war council met at dawn, their faces grim...</p>",
+    "order": 3,
+    "author_note": "This one was tough to write. Hope you enjoy it!",
+    "status": "draft",
+    "word_count": 512,
+    "published_at": null,
+    "created_at": "2024-06-05T09:15:00Z"
+  },
+  "meta": {
+    "request_id": "req_chp002"
+  }
+}
+```
+
+---
+
+## Get a chapter
+
+<Note>Requires the `read:stories` scope.</Note>
+
+Retrieve a single chapter by its ID.
+
+```
+GET /stories/{story_id}/chapters/{chapter_id}
+```
+
+### Path parameters
+
+<ParamField path="story_id" type="string" required>
+  The unique ID of the parent story.
+</ParamField>
+
+<ParamField path="chapter_id" type="string" required>
+  The unique ID of the chapter to retrieve.
+</ParamField>
+
+### Example request
+
+```bash
+curl https://api.story.app/v1/stories/st_abc123/chapters/ch_xyz003 \
+  -H "Authorization: Bearer $STORY_API_KEY"
+```
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "ch_xyz003",
+    "story_id": "st_abc123",
+    "title": "Chapter 3: Ashes and Oaths",
+    "content": "<p>The war council met at dawn, their faces grim...</p>",
+    "order": 3,
+    "author_note": "This one was tough to write. Hope you enjoy it!",
+    "status": "draft",
+    "word_count": 512,
+    "published_at": null,
+    "created_at": "2024-06-05T09:15:00Z"
+  },
+  "meta": {
+    "request_id": "req_chp003"
+  }
+}
+```
+
+---
+
+## Update a chapter
+
+<Note>Requires the `write:stories` scope.</Note>
+
+Update the content or metadata of an existing chapter. Send only the fields you want to change — all parameters are optional. To publish a draft chapter, set `status` to `published`.
+
+```
+PUT /stories/{story_id}/chapters/{chapter_id}
+```
+
+### Path parameters
+
+<ParamField path="story_id" type="string" required>
+  The unique ID of the parent story.
+</ParamField>
+
+<ParamField path="chapter_id" type="string" required>
+  The unique ID of the chapter to update.
+</ParamField>
+
+### Body parameters
+
+<ParamField body="title" type="string">
+  A new title for the chapter.
+</ParamField>
+
+<ParamField body="content" type="string">
+  Updated body content for the chapter. Accepts HTML or Markdown.
+</ParamField>
+
+<ParamField body="order" type="integer">
+  An updated position for the chapter within the story.
+</ParamField>
+
+<ParamField body="author_note" type="string">
+  An updated author note.
+</ParamField>
+
+<ParamField body="status" type="string">
+  Updated publish status. One of `draft` or `published`.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X PUT https://api.story.app/v1/stories/st_abc123/chapters/ch_xyz003 \
+  -H "Authorization: Bearer $STORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "published"
+  }'
+```
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "ch_xyz003",
+    "story_id": "st_abc123",
+    "title": "Chapter 3: Ashes and Oaths",
+    "content": "<p>The war council met at dawn, their faces grim...</p>",
+    "order": 3,
+    "author_note": "This one was tough to write. Hope you enjoy it!",
+    "status": "published",
+    "word_count": 512,
+    "published_at": "2024-06-06T08:00:00Z",
+    "created_at": "2024-06-05T09:15:00Z"
+  },
+  "meta": {
+    "request_id": "req_chp004"
+  }
+}
+```
+
+---
+
+## Delete a chapter
+
+<Note>Requires the `write:stories` scope.</Note>
+
+Permanently delete a chapter from a story. This action cannot be undone.
+
+```
+DELETE /stories/{story_id}/chapters/{chapter_id}
+```
+
+### Path parameters
+
+<ParamField path="story_id" type="string" required>
+  The unique ID of the parent story.
+</ParamField>
+
+<ParamField path="chapter_id" type="string" required>
+  The unique ID of the chapter to delete.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X DELETE https://api.story.app/v1/stories/st_abc123/chapters/ch_xyz003 \
+  -H "Authorization: Bearer $STORY_API_KEY"
+```
+
+### Example response
+
+A successful deletion returns `204 No Content` with an empty response body.

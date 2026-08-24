@@ -1,0 +1,183 @@
+---
+title: "Receive Real-Time Events with Story Webhooks"
+sidebarTitle: "Webhooks"
+description: "Configure Story webhooks to receive HTTP POST events when stories are published, chapters are released, or readers comment or follow."
+---
+
+Story webhooks let your application receive real-time HTTP notifications whenever something happens on your account. Instead of polling the API, you register an endpoint and Story sends an HTTP POST request to it the moment an event fires — such as when a chapter is published or a new reader follows you. This makes webhooks ideal for powering live notifications, triggering automated workflows, and keeping external systems in sync.
+
+<Warning>
+  Story only delivers webhooks to **HTTPS endpoints**. Plain HTTP URLs are rejected at registration time. Make sure your server has a valid TLS certificate before creating a webhook.
+</Warning>
+
+---
+
+## Creating a webhook
+
+Register a new webhook by sending your endpoint URL and the list of events you want to subscribe to.
+
+```
+POST /webhooks
+```
+
+### Body parameters
+
+<ParamField body="url" type="string" required>
+  The HTTPS URL of your endpoint. Story will POST event payloads to this URL.
+</ParamField>
+
+<ParamField body="events" type="array" required>
+  An array of event type strings to subscribe to. See [Available Events](#available-events) for the full list.
+</ParamField>
+
+<ParamField body="secret" type="string">
+  An optional secret string used to sign webhook payloads with HMAC-SHA256. If provided, Story includes a signature in the `X-Story-Signature` header of every delivery. See [Validating Signatures](#validating-signatures).
+</ParamField>
+
+### Example request
+
+```bash
+curl -X POST https://api.story.app/v1/webhooks \
+  -H "Authorization: Bearer $STORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://yourapp.com/webhooks/story",
+    "events": ["chapter.published", "follower.new"],
+    "secret": "your_webhook_secret"
+  }'
+```
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "wh_123abc",
+    "url": "https://yourapp.com/webhooks/story",
+    "events": ["chapter.published", "follower.new"],
+    "created_at": "2024-06-01T12:00:00Z"
+  },
+  "meta": {
+    "request_id": "req_wh001"
+  }
+}
+```
+
+---
+
+## Available events
+
+Subscribe to any combination of the following event types when creating or updating a webhook.
+
+| Event | Description |
+|---|---|
+| `story.published` | Fires when one of your stories is published for the first time. |
+| `story.updated` | Fires when a story's metadata (title, description, tags) is updated. |
+| `chapter.published` | Fires when a chapter is published and becomes visible to readers. |
+| `comment.created` | Fires when a reader leaves a comment on one of your stories or chapters. |
+| `follower.new` | Fires when a reader follows your account. |
+
+---
+
+## Webhook payload
+
+When an event fires, Story sends an HTTP POST request to your endpoint with a JSON body. Every payload follows the same envelope structure, with event-specific data nested in the `data` field.
+
+```json
+{
+  "event": "chapter.published",
+  "timestamp": "2024-01-15T12:00:00Z",
+  "data": {
+    "chapter_id": "ch_xyz789",
+    "story_id": "st_abc123",
+    "title": "Chapter 1: The Beginning"
+  }
+}
+```
+
+Your endpoint should return a `2xx` HTTP status code to acknowledge receipt. If Story does not receive a `2xx` response within 10 seconds, it will retry delivery with exponential backoff up to five times.
+
+---
+
+## Validating signatures
+
+If you provided a `secret` when creating your webhook, Story signs every payload using HMAC-SHA256 and includes the signature in the `X-Story-Signature` header in the format `sha256=<hex_digest>`. Verify this signature before processing the payload to confirm the request genuinely came from Story.
+
+```python webhook_handler.py
+import hmac
+import hashlib
+
+def verify_signature(payload: bytes, signature: str, secret: str) -> bool:
+    expected = hmac.new(
+        secret.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(f"sha256={expected}", signature)
+```
+
+Always use a constant-time comparison function like `hmac.compare_digest` to prevent timing attacks. Reject any request where the signature does not match.
+
+<Warning>
+  Always validate the `X-Story-Signature` header before acting on a webhook payload. Without signature validation, an attacker could send forged requests to your endpoint.
+</Warning>
+
+---
+
+## Managing webhooks
+
+### List your webhooks
+
+Retrieve all webhooks registered to your account.
+
+```
+GET /webhooks
+```
+
+#### Example request
+
+```bash
+curl https://api.story.app/v1/webhooks \
+  -H "Authorization: Bearer $STORY_API_KEY"
+```
+
+#### Example response
+
+```json
+{
+  "data": [
+    {
+      "id": "wh_123abc",
+      "url": "https://yourapp.com/webhooks/story",
+      "events": ["chapter.published", "follower.new"],
+      "created_at": "2024-06-01T12:00:00Z"
+    }
+  ],
+  "meta": {
+    "request_id": "req_wh002"
+  }
+}
+```
+
+### Delete a webhook
+
+Remove a webhook subscription. Story will stop sending events to the registered URL immediately.
+
+```
+DELETE /webhooks/{id}
+```
+
+<ParamField path="id" type="string" required>
+  The unique ID of the webhook to delete.
+</ParamField>
+
+#### Example request
+
+```bash
+curl -X DELETE https://api.story.app/v1/webhooks/wh_123abc \
+  -H "Authorization: Bearer $STORY_API_KEY"
+```
+
+#### Example response
+
+A successful deletion returns `204 No Content` with an empty response body.

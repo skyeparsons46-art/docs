@@ -1,0 +1,78 @@
+---
+title: "Authenticate with the Story API Using API Keys"
+sidebarTitle: "Authentication"
+description: "Generate a Story API key from your dashboard and include it in the Authorization header on every request to the Story REST API."
+---
+
+The Story API uses API keys for authentication. Every request you make to the API must include a valid API key — requests without one will be rejected with a `401 Unauthorized` error. Keep your keys secure and rotate them regularly to protect your account.
+
+## Generating an API Key
+
+Create a new API key from your Story dashboard at any time. Each key you generate can be scoped to specific permissions so you can follow the principle of least privilege.
+
+<Steps>
+  <Step title="Log in to your account">
+    Go to [story.app](https://story.app) and sign in to the account you want to generate a key for.
+  </Step>
+  <Step title="Go to Settings → API Keys">
+    Open your account menu, click **Settings**, then select **API Keys** from the sidebar.
+  </Step>
+  <Step title="Click &quot;Create New Key&quot;">
+    Click the **Create New Key** button in the top-right corner of the API Keys page.
+  </Step>
+  <Step title="Give it a descriptive name">
+    Enter a name that identifies what the key is used for — for example, `my-publishing-app` or `analytics-integration`. A clear name makes it easier to manage and revoke keys later.
+  </Step>
+  <Step title="Copy the key immediately">
+    After the key is created, copy it and store it somewhere safe. Story displays the full key **only once** — if you close the dialog without copying it, you'll need to create a new key.
+  </Step>
+</Steps>
+
+## Using Your API Key
+
+Pass your API key in the `Authorization` header of every request, using the `Bearer` scheme:
+
+```bash
+curl https://api.story.app/v1/stories \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+Replace `YOUR_API_KEY` with the key you copied from your dashboard. If the key is missing or invalid, the API returns a `401 Unauthorized` error.
+
+## Key Scopes
+
+When creating a key, you choose which scopes to grant it. Scopes limit what the key can do, so you can issue narrow-permission keys for specific integrations.
+
+| Scope | Description |
+|---|---|
+| `read:stories` | Read your stories and their metadata. |
+| `write:stories` | Create, update, and delete stories and chapters. |
+| `read:analytics` | Access analytics and performance data for your stories. |
+| `webhooks` | Create, list, and delete webhook subscriptions. |
+
+Assign only the scopes your integration needs. For example, a read-only dashboard only needs `read:stories` and `read:analytics`.
+
+## Revoking Keys
+
+If a key is compromised or no longer needed, revoke it immediately from your dashboard:
+
+1. Go to **Settings → API Keys**.
+2. Find the key you want to revoke.
+3. Click the **trash icon** next to the key and confirm the deletion.
+
+Revoked keys stop working instantly. Any requests made with a revoked key will receive a `401 Unauthorized` response.
+
+<Warning>
+  Never commit API keys to source control. Storing a key in a Git repository — even a private one — puts your account at risk. Use environment variables or a secrets manager to inject keys at runtime.
+</Warning>
+
+Store your key in an environment variable and reference it in your requests:
+
+```bash
+export STORY_API_KEY=sk_live_...
+
+curl https://api.story.app/v1/stories \
+  -H "Authorization: Bearer $STORY_API_KEY"
+```
+
+This keeps your key out of your codebase while making it easy to rotate without changing application code.

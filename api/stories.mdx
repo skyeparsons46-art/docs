@@ -1,0 +1,328 @@
+---
+title: "REST API Endpoints for Stories"
+sidebarTitle: "Stories"
+description: "Create, read, update, and delete stories via the Story REST API. Manage titles, descriptions, visibility, cover images, and genre tags."
+---
+
+The Stories endpoints let you programmatically manage every story on your account. You can list existing stories, create new ones, update metadata like titles and genre tags, control visibility, and delete stories you no longer need. All endpoints require authentication with a key that has the `read:stories` or `write:stories` scope as appropriate.
+
+---
+
+## The story object
+
+Every endpoint that returns a story uses the following object shape.
+
+<ResponseField name="id" type="string">
+  The unique identifier for the story.
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  The title of the story.
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  A short description or blurb for the story.
+</ResponseField>
+
+<ResponseField name="visibility" type="string">
+  The visibility setting for the story. One of `public`, `unlisted`, or `private`.
+</ResponseField>
+
+<ResponseField name="genre_tags" type="array">
+  An array of genre tag strings associated with the story (e.g. `["fantasy", "romance"]`).
+</ResponseField>
+
+<ResponseField name="cover_image_url" type="string">
+  The URL of the story's cover image, or `null` if no cover has been set.
+</ResponseField>
+
+<ResponseField name="published_at" type="string">
+  The ISO 8601 timestamp at which the story was first published, or `null` if unpublished.
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  The ISO 8601 timestamp at which the story was created.
+</ResponseField>
+
+<ResponseField name="chapter_count" type="integer">
+  The total number of chapters in the story.
+</ResponseField>
+
+---
+
+## List your stories
+
+<Note>Requires the `read:stories` scope.</Note>
+
+Retrieve a paginated list of stories on your account. Use the `status` query parameter to filter by publish state.
+
+```
+GET /stories
+```
+
+### Query parameters
+
+<ParamField query="page" type="integer" default="1">
+  The page number to retrieve.
+</ParamField>
+
+<ParamField query="per_page" type="integer" default="20">
+  The number of stories to return per page. Maximum is `100`.
+</ParamField>
+
+<ParamField query="status" type="string" default="all">
+  Filter stories by publish status. One of `draft`, `published`, or `all`.
+</ParamField>
+
+### Example request
+
+```bash
+curl https://api.story.app/v1/stories?status=published&per_page=5 \
+  -H "Authorization: Bearer $STORY_API_KEY"
+```
+
+### Example response
+
+```json
+{
+  "data": [
+    {
+      "id": "st_abc123",
+      "title": "The Ember Throne",
+      "description": "A kingdom on the brink of war. A queen with a secret. One impossible choice.",
+      "visibility": "public",
+      "genre_tags": ["fantasy", "adventure"],
+      "cover_image_url": "https://cdn.story.app/covers/st_abc123.jpg",
+      "published_at": "2024-03-10T08:00:00Z",
+      "created_at": "2024-02-01T14:22:00Z",
+      "chapter_count": 12
+    },
+    {
+      "id": "st_def456",
+      "title": "Quiet Hours",
+      "description": "A slow-burn love story set in a rain-soaked coastal town.",
+      "visibility": "public",
+      "genre_tags": ["romance", "contemporary"],
+      "cover_image_url": null,
+      "published_at": "2024-05-03T10:15:00Z",
+      "created_at": "2024-04-18T09:00:00Z",
+      "chapter_count": 7
+    }
+  ],
+  "meta": {
+    "request_id": "req_abc123",
+    "page": 1,
+    "per_page": 5,
+    "total": 2
+  }
+}
+```
+
+---
+
+## Create a story
+
+<Note>Requires the `write:stories` scope.</Note>
+
+Create a new story on your account. You can add chapters to the story after it's created using the [Chapters endpoints](/api/chapters).
+
+```
+POST /stories
+```
+
+### Body parameters
+
+<ParamField body="title" type="string" required>
+  The title of the story.
+</ParamField>
+
+<ParamField body="description" type="string">
+  A short description or blurb for the story.
+</ParamField>
+
+<ParamField body="visibility" type="string" default="public">
+  Who can see the story. One of `public`, `unlisted`, or `private`.
+</ParamField>
+
+<ParamField body="genre_tags" type="array">
+  An array of genre tag strings to associate with the story.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X POST https://api.story.app/v1/stories \
+  -H "Authorization: Bearer $STORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "The Ember Throne",
+    "description": "A kingdom on the brink of war. A queen with a secret. One impossible choice.",
+    "visibility": "public",
+    "genre_tags": ["fantasy", "adventure"]
+  }'
+```
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "st_abc123",
+    "title": "The Ember Throne",
+    "description": "A kingdom on the brink of war. A queen with a secret. One impossible choice.",
+    "visibility": "public",
+    "genre_tags": ["fantasy", "adventure"],
+    "cover_image_url": null,
+    "published_at": null,
+    "created_at": "2024-06-01T11:30:00Z",
+    "chapter_count": 0
+  },
+  "meta": {
+    "request_id": "req_def456"
+  }
+}
+```
+
+---
+
+## Get a story
+
+<Note>Requires the `read:stories` scope.</Note>
+
+Retrieve a single story by its ID.
+
+```
+GET /stories/{id}
+```
+
+### Path parameters
+
+<ParamField path="id" type="string" required>
+  The unique ID of the story to retrieve.
+</ParamField>
+
+### Example request
+
+```bash
+curl https://api.story.app/v1/stories/st_abc123 \
+  -H "Authorization: Bearer $STORY_API_KEY"
+```
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "st_abc123",
+    "title": "The Ember Throne",
+    "description": "A kingdom on the brink of war. A queen with a secret. One impossible choice.",
+    "visibility": "public",
+    "genre_tags": ["fantasy", "adventure"],
+    "cover_image_url": "https://cdn.story.app/covers/st_abc123.jpg",
+    "published_at": "2024-03-10T08:00:00Z",
+    "created_at": "2024-02-01T14:22:00Z",
+    "chapter_count": 12
+  },
+  "meta": {
+    "request_id": "req_ghi789"
+  }
+}
+```
+
+---
+
+## Update a story
+
+<Note>Requires the `write:stories` scope.</Note>
+
+Update the metadata of an existing story. Send only the fields you want to change — all parameters are optional.
+
+```
+PUT /stories/{id}
+```
+
+### Path parameters
+
+<ParamField path="id" type="string" required>
+  The unique ID of the story to update.
+</ParamField>
+
+### Body parameters
+
+<ParamField body="title" type="string">
+  A new title for the story.
+</ParamField>
+
+<ParamField body="description" type="string">
+  A new description for the story.
+</ParamField>
+
+<ParamField body="visibility" type="string">
+  Updated visibility setting. One of `public`, `unlisted`, or `private`.
+</ParamField>
+
+<ParamField body="genre_tags" type="array">
+  A replacement array of genre tags. This overwrites the existing list.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X PUT https://api.story.app/v1/stories/st_abc123 \
+  -H "Authorization: Bearer $STORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "visibility": "unlisted",
+    "genre_tags": ["fantasy", "adventure", "epic"]
+  }'
+```
+
+### Example response
+
+```json
+{
+  "data": {
+    "id": "st_abc123",
+    "title": "The Ember Throne",
+    "description": "A kingdom on the brink of war. A queen with a secret. One impossible choice.",
+    "visibility": "unlisted",
+    "genre_tags": ["fantasy", "adventure", "epic"],
+    "cover_image_url": "https://cdn.story.app/covers/st_abc123.jpg",
+    "published_at": "2024-03-10T08:00:00Z",
+    "created_at": "2024-02-01T14:22:00Z",
+    "chapter_count": 12
+  },
+  "meta": {
+    "request_id": "req_jkl012"
+  }
+}
+```
+
+---
+
+## Delete a story
+
+<Note>Requires the `write:stories` scope.</Note>
+
+Permanently delete a story and all of its chapters. This action cannot be undone.
+
+```
+DELETE /stories/{id}
+```
+
+### Path parameters
+
+<ParamField path="id" type="string" required>
+  The unique ID of the story to delete.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X DELETE https://api.story.app/v1/stories/st_abc123 \
+  -H "Authorization: Bearer $STORY_API_KEY"
+```
+
+### Example response
+
+A successful deletion returns `204 No Content` with an empty response body.
