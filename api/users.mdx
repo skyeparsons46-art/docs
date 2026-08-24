@@ -1,7 +1,7 @@
 ---
-title: "REST API Endpoints for Users"
+title: "Story API: Retrieve Public User Profile Information"
 sidebarTitle: "Users"
-description: "Retrieve user profile data including display names, bios, published story counts, and follower statistics via the Story API."
+description: "Retrieve public profile data for any Story user, including display names, bios, follower counts, and published story statistics, using the Story API."
 ---
 
 The Users endpoints let you look up public profile information for Story accounts. You can fetch a user's display name, bio, follower count, and published story statistics — useful for building author pages, reader discovery features, or social integrations. You can identify users by their numeric ID or by their `@username`.
@@ -91,72 +91,3 @@ curl https://api.story.app/v1/users/@johndoe \
 }
 ```
 
----
-
-## List stories by a user
-
-Retrieve a paginated list of publicly published stories by a specific user.
-
-```
-GET /users/{id}/stories
-```
-
-### Path parameters
-
-<ParamField path="id" type="string" required>
-  The user's numeric ID or their @username (e.g. `@johndoe`).
-</ParamField>
-
-### Query parameters
-
-<ParamField query="page" type="integer" default="1">
-  The page number to retrieve.
-</ParamField>
-
-<ParamField query="per_page" type="integer" default="20">
-  The number of stories to return per page. Maximum is `100`.
-</ParamField>
-
-### Example request
-
-```bash
-curl https://api.story.app/v1/users/@johndoe/stories?page=1&per_page=3 \
-  -H "Authorization: Bearer $STORY_API_KEY"
-```
-
-### Example response
-
-```json
-{
-  "data": [
-    {
-      "id": "st_abc123",
-      "title": "The Ember Throne",
-      "description": "A kingdom on the brink of war. A queen with a secret. One impossible choice.",
-      "visibility": "public",
-      "genre_tags": ["fantasy", "adventure"],
-      "cover_image_url": "https://cdn.story.app/covers/st_abc123.jpg",
-      "published_at": "2024-03-10T08:00:00Z",
-      "created_at": "2024-02-01T14:22:00Z",
-      "chapter_count": 12
-    },
-    {
-      "id": "st_def456",
-      "title": "Quiet Hours",
-      "description": "A slow-burn love story set in a rain-soaked coastal town.",
-      "visibility": "public",
-      "genre_tags": ["romance", "contemporary"],
-      "cover_image_url": null,
-      "published_at": "2024-05-03T10:15:00Z",
-      "created_at": "2024-04-18T09:00:00Z",
-      "chapter_count": 7
-    }
-  ],
-  "meta": {
-    "request_id": "req_usr002",
-    "page": 1,
-    "per_page": 3,
-    "total": 6
-  }
-}
-```
